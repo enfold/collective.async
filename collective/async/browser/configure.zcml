@@ -1,0 +1,122 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:genericsetup="http://namespaces.zope.org/genericsetup"
+    xmlns:plone="http://namespaces.plone.org/plone"
+    xmlns:five="http://namespaces.zope.org/five">
+
+  <browser:resource
+      name="collective-async-poll.js"
+      file="static/poll.js"
+  />
+
+  <browser:page
+      name="wait-for-new-object"
+      for="*"
+      template="wait-for-new-object.pt"
+      permission="zope2.View"
+  />
+
+  <browser:page
+      name="check-for-new-object"
+      for="Products.CMFPlone.interfaces.IPloneSiteRoot"
+      class=".add.CheckForNewObject"
+      permission="zope2.View"
+  />
+
+  <class class=".add.AsyncAddView">
+    <require
+        permission="cmf.AddPortalContent"
+        interface="zope.publisher.interfaces.browser.IBrowserPage"
+    />
+  </class>
+
+  <browser:page
+      name="wait-for-edit"
+      for="*"
+      template="wait-for-edit.pt"
+      permission="zope2.View"
+  />
+
+  <browser:page
+      name="check-edit"
+      for="*"
+      class=".edit.CheckForEdit"
+      permission="zope2.View"
+  />
+
+  <browser:page
+    name="delete_confirmation"
+    for="*"
+    class=".actions.DeleteConfirmationForm"
+    permission="zope2.DeleteObjects"
+    layer="collective.async.interfaces.ICollectiveAsyncLayer"
+    />
+
+  <browser:page
+    name="wait-for-delete"
+    for="*"
+    template="wait-for-delete.pt"
+    permission="zope2.View"
+    />
+
+  <browser:page
+    name="check-delete"
+    for="*"
+    class=".actions.CheckForDelete"
+    permission="zope2.View"
+    />
+
+  <browser:page
+    name="object_paste"
+    for="*"
+    class=".actions.ObjectPasteView"
+    permission="cmf.AddPortalContent"
+    layer="collective.async.interfaces.ICollectiveAsyncLayer"
+    />
+
+  <browser:page
+    name="wait-for-paste"
+    for="*"
+    template="wait-for-paste.pt"
+    permission="zope2.View"
+    />
+
+  <browser:page
+    name="check-paste"
+    for="*"
+    class=".actions.CheckForPaste"
+    permission="zope2.View"
+    />
+
+  <browser:page
+    name="folder_rename"
+    for="*"
+    class=".actions.RenameForm"
+    permission="cmf.ModifyPortalContent"
+    layer="collective.async.interfaces.ICollectiveAsyncLayer"
+    />
+
+  <browser:page
+    name="object_rename"
+    for="*"
+    class=".actions.RenameForm"
+    permission="cmf.ModifyPortalContent"
+    layer="collective.async.interfaces.ICollectiveAsyncLayer"
+    />
+
+  <browser:page
+    name="wait-for-rename"
+    for="*"
+    template="wait-for-rename.pt"
+    permission="zope2.View"
+    />
+
+  <browser:page
+    name="check-rename"
+    for="*"
+    class=".actions.CheckForRename"
+    permission="zope2.View"
+    />
+
+</configure>

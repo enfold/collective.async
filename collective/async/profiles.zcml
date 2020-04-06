@@ -1,0 +1,20 @@
+<configure
+    xmlns="http://namespaces.zope.org/genericsetup">
+
+  <registerProfile
+      name="default"
+      title="collective.async"
+      directory="profiles/default"
+      description="collective.async"
+      for="Products.CMFPlone.interfaces.IPloneSiteRoot"
+      provides="Products.GenericSetup.interfaces.EXTENSION"
+      />
+
+  <importStep
+      name="collective_async_install"
+      title="collective.async install routines"
+      description=""
+      handler=".setuphandlers.install_steps">
+  </importStep>
+
+</configure>
