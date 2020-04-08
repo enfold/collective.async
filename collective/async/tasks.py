@@ -23,7 +23,7 @@ def add_object(task, container, task_id):
         zope.event.notify(zope.lifecycleevent.ObjectCreatedEvent(obj))
         new_obj = dexterity_utils.addContentToContainer(container, obj)
         uuid = IUUID(new_obj)
-        record_task_result.apply_async([task_id, constants.ERROR],
+        record_task_result.apply_async([task_id, constants.SUCCESS],
                                        dict(obj=None, obj_uid=uuid))
         transaction.commit()
     except ConflictError:
