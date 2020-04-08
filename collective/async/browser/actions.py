@@ -52,6 +52,7 @@ class CheckForDelete(BrowserView):
         request = self.request
         task_id = request.get('task_id')
         result = dict()
+        error_message = u'Sorry, there was an error deleting your object.'
         if utils.has_task(task_id):
             task = utils.get_task(task_id)
             result['status'] = status = task['status']
@@ -64,8 +65,10 @@ class CheckForDelete(BrowserView):
                 if portal_type in use_view_action:
                     url = url + '/view'
                 result['redirect_url'] = url
+            elif status == constants.ERROR:
+                result['message'] = error_message
         else:
-            result['message'] = u'Sorry, there was an error deleting your object.'
+            result['message'] = error_message
             result['status'] = constants.ERROR
         request.response.setHeader('Content-Type',
                                    'application/json; charset=utf-8')
@@ -101,6 +104,7 @@ class CheckForRename(BrowserView):
         request = self.request
         task_id = request.get('task_id')
         result = dict()
+        error_message = u'Sorry, there was an error renaming your object.'
         if utils.has_task(task_id):
             task = utils.get_task(task_id)
             result['status'] = status = task['status']
@@ -113,8 +117,10 @@ class CheckForRename(BrowserView):
                 if portal_type in use_view_action:
                     url = url + '/view'
                 result['redirect_url'] = url
+            elif status == constants.ERROR:
+                result['message'] = error_message
         else:
-            result['message'] = u'Sorry, there was an error renaming your object.'
+            result['message'] = error_message
             result['status'] = constants.ERROR
         request.response.setHeader('Content-Type',
                                    'application/json; charset=utf-8')
@@ -149,6 +155,7 @@ class CheckForPaste(BrowserView):
         request = self.request
         task_id = request.get('task_id')
         result = dict()
+        error_message = u'Sorry, there was an error pasting your object.'
         if utils.has_task(task_id):
             task = utils.get_task(task_id)
             result['status'] = status = task['status']
@@ -161,8 +168,10 @@ class CheckForPaste(BrowserView):
                 if portal_type in use_view_action:
                     url = url + '/view'
                 result['redirect_url'] = url
+            elif status == constants.ERROR:
+                result['message'] = error_message
         else:
-            result['message'] = u'Sorry, there was an error pasting your object.'
+            result['message'] = error_message
             result['status'] = constants.ERROR
         request.response.setHeader('Content-Type',
                                    'application/json; charset=utf-8')
