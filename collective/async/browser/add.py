@@ -55,6 +55,8 @@ class CheckForNewObject(BrowserView):
                     if brain.portal_type in use_view_action:
                         url = url + '/view'
                     result['redirect_url'] = url
+            elif status == constants.ERROR:
+                result['message'] = error_message
         else:
             result['status'] = constants.ERROR
             result['message'] = error_message
