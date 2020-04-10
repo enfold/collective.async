@@ -90,6 +90,13 @@ def delete(task, parent, obj_id, obj_title, task_id):
                                            dict(title=obj_title),
                                            without_transaction=True)
         raise
+    except Unauthorized:
+        msg = u'You are not authorized to delete this object.'
+        record_task_result.apply_async([task_id, constants.ERROR],
+                                       dict(title=obj_title,
+                                            message=msg),
+                                       without_transaction=True)
+        raise
     except Exception:
         record_task_result.apply_async([task_id, constants.ERROR],
                                        dict(title=obj_title),
@@ -120,6 +127,12 @@ def rename(task, obj, new_id, new_title, task_id):
         if max_retries is not None and retries > max_retries:
             record_task_result.apply_async([task_id, constants.ERROR],
                                            dict(), without_transaction=True)
+        raise
+    except Unauthorized:
+        msg = u'You are not authorized to rename this object.'
+        record_task_result.apply_async([task_id, constants.ERROR],
+                                       dict(message=msg),
+                                       without_transaction=True)
         raise
     except Exception:
         record_task_result.apply_async([task_id, constants.ERROR],

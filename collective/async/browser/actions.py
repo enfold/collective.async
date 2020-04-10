@@ -66,7 +66,7 @@ class CheckForDelete(BrowserView):
                     url = url + '/view'
                 result['redirect_url'] = url
             elif status == constants.ERROR:
-                result['message'] = error_message
+                result['message'] = task.get('message', error_message)
         else:
             result['message'] = error_message
             result['status'] = constants.ERROR
@@ -118,7 +118,7 @@ class CheckForRename(BrowserView):
                     url = url + '/view'
                 result['redirect_url'] = url
             elif status == constants.ERROR:
-                result['message'] = error_message
+                result['message'] = task.get('message', error_message)
         else:
             result['message'] = error_message
             result['status'] = constants.ERROR
@@ -169,7 +169,7 @@ class CheckForPaste(BrowserView):
                     url = url + '/view'
                 result['redirect_url'] = url
             elif status == constants.ERROR:
-                result['message'] = error_message
+                result['message'] = task.get('message', error_message)
         else:
             result['message'] = error_message
             result['status'] = constants.ERROR
