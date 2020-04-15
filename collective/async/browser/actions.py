@@ -1,17 +1,15 @@
 # -*- coding: utf-8 -*-
 import json
-import zope.component
 from .. import constants
 from .. import tasks
 from .. import utils
 from AccessControl import getSecurityManager
 from AccessControl import Unauthorized
-from Acquisition import aq_base
 from Acquisition import aq_inner
 from Acquisition import aq_parent
 from plone.api import user as user_api
 from plone.app.content.browser import actions as plone_actions
-from plone.registry.interfaces import IRegistry
+from plone.uuid.interfaces import IUUID
 from Products.CMFPlone import PloneMessageFactory as _
 from Products.CMFPlone import utils as plone_utils
 from Products.statusmessages.interfaces import IStatusMessage
@@ -20,8 +18,7 @@ from zope.publisher.browser import BrowserView
 
 
 class DeleteConfirmationForm(plone_actions.DeleteConfirmationForm):
-
-    @button.buttonAndHandler(_(u'Delete'), name='Delete')
+    @button.buttonAndHandler(_(u"Delete"), name="Delete")
     def handle_delete(self, action):
         context = self.context
         request = self.request
@@ -29,55 +26,29 @@ class DeleteConfirmationForm(plone_actions.DeleteConfirmationForm):
         parent = aq_parent(inner)
         title = plone_utils.safe_unicode(context.Title())
         if context.aq_chain == inner.aq_chain:
-            pass
-            task_id = utils.register_task()
-            tasks.delete.apply_async([parent, context.getId(), title, task_id],
-                                     dict())
-            url = parent.absolute_url() + '/wait-for-delete?task_id=%s' % task_id
-            return request.response.redirect(url)
+            el_id = context.getId()
+            uuid = IUUID(parent, 0)
+            task_id = utils.register_task(
+                action=constants.DELETE, context=uuid, id=el_id
+            )
+            tasks.delete.apply_async(
+                [parent, context.getId(), title, task_id], dict()
+            )
+
+            utils.add_task_to_cookie(request, task_id)
+            return request.response.redirect(parent.absolute_url())
         else:
             IStatusMessage(request).add(
-                _(u'"${title}" has already been deleted',
-                  mapping={u'title': title})
+                _(
+                    u'"${title}" has already been deleted',
+                    mapping={u"title": title},
+                )
             )
             return request.response.redirect(parent.absolute_url())
 
 
-class CheckForDelete(BrowserView):
-
-    def __call__(self, *args, **kwargs):
-        context = self.context
-        if user_api.is_anonymous():
-            raise Unauthorized
-        request = self.request
-        task_id = request.get('task_id')
-        result = dict()
-        error_message = u'Sorry, there was an error deleting your object.'
-        if utils.has_task(task_id):
-            task = utils.get_task(task_id)
-            result['status'] = status = task['status']
-            if status == constants.SUCCESS:
-                url = context.absolute_url()
-                portal_type = getattr(aq_base(context), 'portal_type', None)
-                registry = zope.component.getUtility(IRegistry)
-                use_view_action = registry.get(
-                    'plone.types_use_view_action_in_listings', [])
-                if portal_type in use_view_action:
-                    url = url + '/view'
-                result['redirect_url'] = url
-            elif status == constants.ERROR:
-                result['message'] = task.get('message', error_message)
-        else:
-            result['message'] = error_message
-            result['status'] = constants.ERROR
-        request.response.setHeader('Content-Type',
-                                   'application/json; charset=utf-8')
-        return json.dumps(result)
-
-
 class RenameForm(plone_actions.RenameForm):
-
-    @button.buttonAndHandler(_(u'Rename'), name='Rename')
+    @button.buttonAndHandler(_(u"Rename"), name="Rename")
     def handle_rename(self, action):
         data, errors = self.extractData()
         if errors:
@@ -85,94 +56,136 @@ class RenameForm(plone_actions.RenameForm):
         context = self.context
         parent = aq_parent(aq_inner(context))
         sm = getSecurityManager()
-        if not sm.checkPermission('Copy or Move', parent):
-            raise Unauthorized(_(u'Permission denied to rename ${title}.',
-                                 mapping={u'title': context.title}))
-        task_id = utils.register_task()
-        tasks.rename.apply_async([context, data['new_id'], data['new_title'],
-                                  task_id], dict())
-        url = parent.absolute_url() + '/wait-for-rename?task_id=%s' % task_id
-        return self.request.response.redirect(url)
-
-
-class CheckForRename(BrowserView):
-
-    def __call__(self, *args, **kwargs):
-        context = self.context
-        if user_api.is_anonymous():
-            raise Unauthorized
-        request = self.request
-        task_id = request.get('task_id')
-        result = dict()
-        error_message = u'Sorry, there was an error renaming your object.'
-        if utils.has_task(task_id):
-            task = utils.get_task(task_id)
-            result['status'] = status = task['status']
-            if status == constants.SUCCESS:
-                url = context.absolute_url()
-                portal_type = getattr(aq_base(context), 'portal_type', None)
-                registry = zope.component.getUtility(IRegistry)
-                use_view_action = registry.get(
-                    'plone.types_use_view_action_in_listings', [])
-                if portal_type in use_view_action:
-                    url = url + '/view'
-                result['redirect_url'] = url
-            elif status == constants.ERROR:
-                result['message'] = task.get('message', error_message)
-        else:
-            result['message'] = error_message
-            result['status'] = constants.ERROR
-        request.response.setHeader('Content-Type',
-                                   'application/json; charset=utf-8')
-        return json.dumps(result)
+        if not sm.checkPermission("Copy or Move", parent):
+            raise Unauthorized(
+                _(
+                    u"Permission denied to rename ${title}.",
+                    mapping={u"title": context.title},
+                )
+            )
+        uuid = IUUID(context, 0)
+        task_id = utils.register_task(
+            action=constants.RENAME,
+            context=uuid,
+            old_title=context.title,
+            old_id=context.id,
+            new_id=data["new_id"],
+            new_title=data["new_title"],
+        )
+        tasks.rename.apply_async(
+            [context, data["new_id"], data["new_title"], task_id], dict()
+        )
+        utils.add_task_to_cookie(self.request, task_id)
+        return self.request.response.redirect(parent.absolute_url())
 
 
 class ObjectPasteView(plone_actions.ObjectPasteView):
-
     def do_action(self):
         context = self.context
         request = self.request
         if not context.cb_dataValid():
             return self.do_redirect(
                 self.canonical_object_url,
-                _(u'Copy or cut one or more items to paste.'),
-                'error'
+                _(u"Copy or cut one or more items to paste."),
+                "error",
             )
-        task_id = utils.register_task()
+        uuid = IUUID(context, 0)
+        task_id = utils.register_task(action=constants.PASTE, context=uuid)
 
-        tasks.paste.apply_async([context, request['__cp'], task_id],
-                                dict())
-        url = context.absolute_url() + '/wait-for-paste?task_id=%s' % task_id
-        return request.response.redirect(url)
+        tasks.paste.apply_async([context, request["__cp"], task_id], dict())
+
+        utils.add_task_to_cookie(request, task_id)
+        return request.response.redirect(context.absolute_url())
 
 
-class CheckForPaste(BrowserView):
+class CheckForTasks(BrowserView):
+    def should_reload(self, task):
+        result = False
+        current_location = self.request.get("current_location", None)
+        if current_location:
+            try:
+                current_location = json.loads(current_location)
+            except:
+                current_location = dict()
+
+        url = ""
+        if current_location:
+            if "origin" in current_location and "pathname" in current_location:
+                url = current_location["origin"] + current_location["pathname"]
+            elif "href" in current_location:
+                url = current_location["href"]
+            else:
+                url = ""
+
+        if url:
+            # First some conditions when view should never be reloaded
+            if not "++add++" in url and not url.endswith("edit"):
+                if url.endswith("@@task-details"):
+                    result = True
+                else:
+                    pass
+                    # XXX: Add more logic in here on when to redirect
+                    # import pdb;pdb.set_trace()
+        return result
 
     def __call__(self, *args, **kwargs):
-        context = self.context
         if user_api.is_anonymous():
             raise Unauthorized
         request = self.request
-        task_id = request.get('task_id')
-        result = dict()
-        error_message = u'Sorry, there was an error pasting your object.'
-        if utils.has_task(task_id):
-            task = utils.get_task(task_id)
-            result['status'] = status = task['status']
-            if status == constants.SUCCESS:
-                url = context.absolute_url()
-                portal_type = getattr(aq_base(context), 'portal_type', None)
-                registry = zope.component.getUtility(IRegistry)
-                use_view_action = registry.get(
-                    'plone.types_use_view_action_in_listings', [])
-                if portal_type in use_view_action:
-                    url = url + '/view'
-                result['redirect_url'] = url
-            elif status == constants.ERROR:
-                result['message'] = task.get('message', error_message)
-        else:
-            result['message'] = error_message
-            result['status'] = constants.ERROR
-        request.response.setHeader('Content-Type',
-                                   'application/json; charset=utf-8')
+        task_ids = request.get("task_ids")
+        result = {
+            "processing": list(),
+            "error": list(),
+            "success": list(),
+            "should_reload": False,
+        }
+        if task_ids:
+            try:
+                task_ids = json.loads(task_ids)
+            except:
+                task_ids = list()
+
+        for task_id in task_ids:
+            if utils.has_task(task_id):
+                task = dict(utils.get_task(task_id))
+                action = task.get("action", None)
+                if action == constants.ADD and "obj" in task:
+                    del task["obj"]
+                if task["status"] == constants.PROCESSING:
+                    result["processing"].append(task)
+                elif task["status"] == constants.SUCCESS:
+                    result["success"].append(task)
+                    if not result["should_reload"]:
+                        result["should_reload"] = self.should_reload(task)
+                elif task["status"] == constants.ERROR:
+                    err_task = {"task_id": task.get("task_id", "")}
+                    err_msg = ""
+                    if action == constants.ADD:
+                        err_msg = (
+                            "An error occurred when trying to add an item."
+                        )
+                    elif action == constants.EDIT:
+                        err_msg = (
+                            "An error occurred when trying to save changes "
+                            "to an item."
+                        )
+                    elif action == constants.DELETE:
+                        err_msg = (
+                            "An error occurred when trying to delete an item."
+                        )
+                    elif action == constants.RENAME:
+                        err_msg = (
+                            "An error occurred when trying to rename an item."
+                        )
+                    elif action == constants.PASTE:
+                        err_msg = (
+                            "An error occurred when trying to paste an item."
+                        )
+
+                    err_task["error_message"] = err_msg
+                    result["error"].append(err_task)
+
+        request.response.setHeader(
+            "Content-Type", "application/json; charset=utf-8"
+        )
         return json.dumps(result)

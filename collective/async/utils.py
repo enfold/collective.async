@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import json
 import uuid
 from . import constants
 from BTrees.OOBTree import OOBTree
@@ -25,7 +26,8 @@ def get_task_storage():
 def register_task(**kwargs):
     task_id = uuid.uuid4().hex
     record = PersistentMapping(kwargs)
-    record['status'] = constants.PROCESSING
+    record["status"] = constants.PROCESSING
+    record["task_id"] = task_id
     storage = get_task_storage()
     storage[task_id] = record
     return task_id
@@ -50,3 +52,22 @@ def has_task(task_id):
 def get_task(task_id):
     storage = get_task_storage()
     return storage.get(task_id)
+
+
+def get_tasks_from_cookie(request):
+    c_str = request.cookies.get(constants.IN_PROGRESS_COOKIE_NAME, "[]")
+    try:
+        ip_tasks = json.loads(c_str)
+    except:
+        ip_tasks = list()
+    return ip_tasks
+
+
+def add_task_to_cookie(request, task_id):
+    ip_tasks = get_tasks_from_cookie(request)
+    if task_id not in ip_tasks:
+        ip_tasks.append(task_id)
+    c_str = json.dumps(ip_tasks)
+    request.response.setCookie(
+        constants.IN_PROGRESS_COOKIE_NAME, c_str, path="/"
+    )

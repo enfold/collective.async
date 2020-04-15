@@ -1,0 +1,13 @@
+<link rel="stylesheet" type="text/css" tal:attributes="href string:${context/portal_url}/++resource++collective.async/poll.css">
+<script type="text/javascript" src="" tal:attributes="src string:${context/portal_url}/++resource++collective.async/poll_viewlet.js" ></script>
+
+<div id="collective-async-polling">
+
+  <div class="alert alert-success" role="alert" style="display:none">
+    <div class="async-spinner"><div></div></div>
+    <div class="message">
+      There are background jobs running
+    </div>
+  </div>
+
+</div>

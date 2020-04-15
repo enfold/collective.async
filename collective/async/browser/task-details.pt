@@ -1,0 +1,71 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+    xmlns:metal="http://xml.zope.org/namespaces/metal"
+    xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+    lang="en"
+    metal:use-macro="context/main_template/macros/master"
+    i18n:domain="plone">
+
+  <body>
+  <metal:title fill-slot="content-title">
+  </metal:title>
+  <metal:description fill-slot="content-description">
+  </metal:description>
+    <div id="content-core" metal:fill-slot="main">
+      <h1 class="documentFirstHeading" tal:condition="view/in_progress_tasks">Tasks in progress</h1>
+      <h1 class="documentFirstHeading" tal:condition="not:view/in_progress_tasks">Task details</h1>
+      <div class="documentDescription description">
+      </div>
+
+      <tal:ip_tasks condition="view/in_progress_tasks" define="tasks view/get_tasks_from_cookie">
+        <p tal:condition="not:tasks">There are no tasks in progress</p>
+        <table tal:condition="tasks">
+          <thead><!--
+            <th>
+              Action
+            </th>-->
+            <th>
+              Description
+            </th>
+            <th>
+              More info
+            </th>
+          </thead>
+          <tdata>
+            <tr tal:repeat="task_id tasks">
+              <tal:block define="task python:view.get_task(task_id)">
+                <!--<td tal:content="task/action|nothing"></td>-->
+                <td tal:content="structure python:view.get_task_description(task)" />
+                <td><a tal:attributes="href string:${context/absolute_url}/@@task-details?task_id=${task_id}">Details</a></td>
+              </tal:block>
+            </tr>
+          </tdata>
+        </table>
+      </tal:ip_tasks>
+
+      <tal:detail_task condition="not:view/in_progress_tasks" define="task view/get_task">
+        <p>Task ID: <span tal:content="request/task_id|nothing" /></p>
+        <tal:error_task condition="python:task.get('status') == 'error'">
+          <h2>An error has occurred</h2>
+          <p tal:content="structure python:view.get_task_error(task)" />
+
+          <div tal:condition="task/tb|nothing">
+            <h3>Technical details</h3>
+            <pre tal:content="task/tb" />
+          </div>
+
+        </tal:error_task>
+        <tal:processing_task condition="python:task.get('status') == 'processing'">
+          <p>This task is still running, please wait until it finishes...</p>
+        </tal:processing_task>
+
+        <tal:completed_task condition="python:task.get('status') == 'success'">
+          <h2>Task completed</h2>
+          <p tal:content="structure python:view.get_task_success_message(task)" />
+        </tal:completed_task>
+
+      </tal:detail_task>
+
+    </div>
+  </body>
+</html>
