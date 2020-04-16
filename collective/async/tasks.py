@@ -29,7 +29,7 @@ def add_object(task, container, task_id):
         )
         transaction.commit()
     except ConflictError:
-        retries = task.retries + 1
+        retries = task.request.retries + 1
         max_retries = task.max_retries
         if max_retries is not None and retries > max_retries:
             tb = traceback.format_exc()
@@ -66,7 +66,7 @@ def finish_edit(task, obj, task_id):
         record_task_result.apply_async([task_id, constants.SUCCESS], dict())
         transaction.commit()
     except ConflictError:
-        retries = task.retries + 1
+        retries = task.request.retries + 1
         max_retries = task.max_retries
         if max_retries is not None and retries > max_retries:
             tb = traceback.format_exc()
@@ -101,7 +101,7 @@ def delete(task, parent, obj_id, obj_title, task_id):
         )
         transaction.commit()
     except ConflictError:
-        retries = task.retries + 1
+        retries = task.request.retries + 1
         max_retries = task.max_retries
         if max_retries is not None and retries > max_retries:
             tb = traceback.format_exc()
@@ -149,7 +149,7 @@ def rename(task, obj, new_id, new_title, task_id):
         )
         transaction.commit()
     except ConflictError:
-        retries = task.retries + 1
+        retries = task.request.retries + 1
         max_retries = task.max_retries
         if max_retries is not None and retries > max_retries:
             tb = traceback.format_exc()
@@ -184,7 +184,7 @@ def paste(task, obj, cp, task_id):
         obj.manage_pasteObjects(cp)
         record_task_result.apply_async([task_id, constants.SUCCESS], dict())
     except ConflictError:
-        retries = task.retries + 1
+        retries = task.request.retries + 1
         max_retries = task.max_retries
         if max_retries is not None and retries > max_retries:
             tb = traceback.format_exc()
