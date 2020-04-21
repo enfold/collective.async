@@ -19,7 +19,7 @@
 
       <tal:ip_tasks condition="view/in_progress_tasks" define="tasks view/get_tasks_from_cookie">
         <p tal:condition="not:tasks">There are no tasks in progress</p>
-        <table tal:condition="tasks">
+        <table tal:condition="tasks" class="listing">
           <thead><!--
             <th>
               Action

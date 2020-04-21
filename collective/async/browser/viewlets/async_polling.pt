@@ -3,7 +3,7 @@
 
 <div id="collective-async-polling">
 
-  <div class="alert alert-success" role="alert" style="display:none">
+  <div class="alert alert-success portalMessage" role="alert" style="display:none">
     <div class="async-spinner"><div></div></div>
     <div class="message">
       There are background jobs running
