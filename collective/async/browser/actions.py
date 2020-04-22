@@ -105,7 +105,7 @@ class CheckForTasks(BrowserView):
         if current_location:
             try:
                 current_location = json.loads(current_location)
-            except:
+            except Exception:
                 current_location = dict()
 
         url = ""
@@ -119,13 +119,53 @@ class CheckForTasks(BrowserView):
 
         if url:
             # First some conditions when view should never be reloaded
-            if not "++add++" in url and not url.endswith("edit"):
+            if "++add++" not in url and not url.endswith("edit"):
                 if url.endswith("@@task-details"):
-                    result = True
+                    qs = current_location["search"]
+                    if "task_id" in qs and task.get("task_id") in qs:
+                        result = True
+                    elif "task_id" not in qs:
+                        result = True
                 else:
-                    pass
-                    # XXX: Add more logic in here on when to redirect
-                    # import pdb;pdb.set_trace()
+                    action = task.get("action", None)
+                    context = task.get("context", None)
+                    if context:
+                        context = content_api.get(UID=context)
+                    else:
+                        context = self.context
+                    if (
+                        action == constants.ADD
+                        and context.absolute_url() == url
+                    ):
+                        result = True
+                    elif action == constants.RENAME and (
+                        context.absolute_url() == url
+                        or context.aq_parent.absolute_url() == url
+                    ):
+                        result = True
+                    elif (
+                        action == constants.DELETE
+                        and context.absolute_url() == url
+                    ):
+                        result = True
+                    elif (
+                        action == constants.PASTE
+                        and context.absolute_url() == url
+                    ):
+                        result = True
+                    elif action == constants.EDIT:
+                        if context.absolute_url() == url:
+                            result = True
+                        elif context.aq_parent.absolute_url() == url:
+                            # Only redirect if the edit was done for the title
+                            for iface, fields in task.get("changes"):
+                                if (
+                                    iface
+                                    == "plone.app.dexterity.behaviors.metadata.IBasic"
+                                    and "IDublinCore.title" in fields
+                                ):
+                                    result = True
+
         return result
 
     def __call__(self, *args, **kwargs):
@@ -142,7 +182,7 @@ class CheckForTasks(BrowserView):
         if task_ids:
             try:
                 task_ids = json.loads(task_ids)
-            except:
+            except Exception:
                 task_ids = list()
 
         for task_id in task_ids:

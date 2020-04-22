@@ -69,7 +69,7 @@ require([
         }
       });
 
-      storeErrorTasksInCookie(tasks);
+      storeErrorTasksInCookie(new_err_tasks);
     }
 
     function addErrorTaskInCookie(task) {
