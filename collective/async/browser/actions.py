@@ -7,6 +7,7 @@ from AccessControl import getSecurityManager
 from AccessControl import Unauthorized
 from Acquisition import aq_inner
 from Acquisition import aq_parent
+from plone.api import content as content_api
 from plone.api import user as user_api
 from plone.app.content.browser import actions as plone_actions
 from plone.uuid.interfaces import IUUID
