@@ -71,3 +71,34 @@ def add_task_to_cookie(request, task_id):
     request.response.setCookie(
         constants.IN_PROGRESS_COOKIE_NAME, c_str, path="/"
     )
+
+
+_ACTIONS = dict()
+
+
+def register_action(action, description_func, success_func, error_func):
+    _ACTIONS[action] = {
+        constants.DESCRIPTION_FUNC_KEY: description_func,
+        constants.SUCCESS_FUNC_KEY: success_func,
+        constants.ERROR_FUNC_KEY: error_func}
+
+
+def _get_message(task, func_key):
+    action = task[constants.ACTION_KEY]
+    msg = ""
+    func = _ACTIONS.get(action, {}).get(func_key, None)
+    if func is not None:
+        msg = func(task)
+    return msg
+
+
+def get_task_description(task):
+    return _get_message(task, constants.DESCRIPTION_FUNC_KEY)
+
+
+def get_task_success_message(task):
+    return _get_message(task, constants.SUCCESS_FUNC_KEY)
+
+
+def get_task_error_message(task):
+    return _get_message(task, constants.ERROR_FUNC_KEY)

@@ -10,5 +10,10 @@ SUCCESS = "success"
 ADD = "add"
 DELETE = "delete"
 EDIT = "edit"
-PASTE = 'paste'
+PASTE = "paste"
 RENAME = "rename"
+
+ACTION_KEY = "action"
+DESCRIPTION_FUNC_KEY = "description_func"
+ERROR_FUNC_KEY = "error_func"
+SUCCESS_FUNC_KEY = "success_func"
