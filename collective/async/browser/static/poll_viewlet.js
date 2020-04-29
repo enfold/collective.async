@@ -116,7 +116,7 @@ require([
         }
         var err_alert = $("<div></div>")
                         .attr('id', val['task_id'])
-                        .addClass("alert alert-danger");
+                        .addClass("alert alert-danger portalMessage");
         var err_msg = $("<div></div>")
                       .addClass("message")
                       .append($("<span></span>")
