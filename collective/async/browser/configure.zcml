@@ -32,12 +32,28 @@
     permission="zope2.View"
     />
 
+  <adapter
+      for="Products.CMFCore.interfaces.IFolderish
+           collective.async.interfaces.ICollectiveAsyncLayer
+           plone.dexterity.interfaces.IDexterityFTI"
+      provides="zope.publisher.interfaces.browser.IBrowserPage"
+      factory=".add.AsyncAddView"
+      />
+
   <class class=".add.AsyncAddView">
     <require
         permission="cmf.AddPortalContent"
         interface="zope.publisher.interfaces.browser.IBrowserPage"
     />
   </class>
+
+  <browser:page
+      for="plone.dexterity.interfaces.IDexterityContent"
+      name="edit"
+      class=".edit.AsyncEditView"
+      permission="cmf.ModifyPortalContent"
+      layer="collective.async.interfaces.ICollectiveAsyncLayer"
+      />
 
   <browser:page
     name="delete_confirmation"
@@ -68,6 +84,32 @@
     for="*"
     class=".actions.RenameForm"
     permission="cmf.ModifyPortalContent"
+    layer="collective.async.interfaces.ICollectiveAsyncLayer"
+    />
+
+  <!-- folder_contents views -->
+
+  <browser:page
+    for="Products.CMFCore.interfaces._content.IFolderish"
+    name="fc-delete"
+    class=".fc_delete.DeleteActionView"
+    permission="cmf.ListFolderContents"
+    layer="collective.async.interfaces.ICollectiveAsyncLayer"
+    />
+
+  <browser:page
+    for="Products.CMFCore.interfaces._content.IFolderish"
+    name="fc-paste"
+    class=".fc_paste.PasteActionView"
+    permission="cmf.ListFolderContents"
+    layer="collective.async.interfaces.ICollectiveAsyncLayer"
+    />
+
+  <browser:page
+    for="Products.CMFCore.interfaces._content.IFolderish"
+    name="fc-rename"
+    class=".fc_rename.RenameActionView"
+    permission="cmf.ListFolderContents"
     layer="collective.async.interfaces.ICollectiveAsyncLayer"
     />
 

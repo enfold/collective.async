@@ -201,11 +201,22 @@ require([
 
     function afterClickButton(data){
       // Add task to the list in cookie
-      var task_id = data['task_id'];
-      if (task_id != undefined) {
-        var tasks = getIPTasksFromCookie();
+      var task_id = data['task_id'],
+          task_ids = data['task_ids'],
+          tasks;
+
+      if (task_id !== undefined) {
+        tasks = getIPTasksFromCookie();
         tasks.push(task_id);
         storeIPTasksInCookie(tasks);
+      }
+
+      if (task_ids !== undefined){
+        _.each(task_ids, function(task_id) {
+          tasks = getIPTasksFromCookie();
+          tasks.push(task_id);
+          storeIPTasksInCookie(tasks);
+        });
       }
       check_for_running_tasks();
     }
@@ -249,6 +260,9 @@ require([
                   rebind = true;
                 }
                 if (button.id == 'paste'){
+                  rebind = true;
+                }
+                if (button.id == 'rename'){
                   rebind = true;
                 }
                 if (rebind) {

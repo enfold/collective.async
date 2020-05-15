@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 from .. import constants
+from .. import events
 from .. import tasks
 from .. import utils
 from AccessControl import getSecurityManager
@@ -15,6 +16,7 @@ from Products.CMFPlone import PloneMessageFactory as _
 from Products.CMFPlone import utils as plone_utils
 from Products.statusmessages.interfaces import IStatusMessage
 from z3c.form import button
+from zope.event import notify
 from zope.publisher.browser import BrowserView
 
 
@@ -29,6 +31,18 @@ class DeleteConfirmationForm(plone_actions.DeleteConfirmationForm):
         if context.aq_chain == inner.aq_chain:
             el_id = context.getId()
             uuid = IUUID(parent, 0)
+
+            try:
+                notify(events.AsyncBeforeDelete(context))
+            except Unauthorized:
+                IStatusMessage(request).add(
+                    _(
+                        u"You are not authorized to delete ${title}.",
+                        mapping={u"title": title},
+                    )
+                )
+                return request.response.redirect(context.absolute_url())
+
             task_id = utils.register_task(
                 action=constants.DELETE, context=uuid, id=el_id
             )
@@ -64,14 +78,28 @@ class RenameForm(plone_actions.RenameForm):
                     mapping={u"title": context.title},
                 )
             )
+
+        newid = data["new_id"]
+        newtitle = data["new_title"]
+
+        try:
+            notify(events.AsyncBeforeRename(context, newid, newtitle))
+        except Unauthorized:
+            raise Unauthorized(
+                _(
+                    u"Permission denied to rename ${title}.",
+                    mapping={u"title": context.title},
+                )
+            )
+
         uuid = IUUID(context, 0)
         task_id = utils.register_task(
             action=constants.RENAME,
             context=uuid,
             old_title=context.title,
             old_id=context.id,
-            new_id=data["new_id"],
-            new_title=data["new_title"],
+            new_id=newid,
+            new_title=newtitle,
         )
         tasks.rename.apply_async(
             [context, data["new_id"], data["new_title"], task_id], dict()
@@ -90,6 +118,15 @@ class ObjectPasteView(plone_actions.ObjectPasteView):
                 _(u"Copy or cut one or more items to paste."),
                 "error",
             )
+
+        try:
+            notify(events.AsyncBeforePaste(context))
+        except Unauthorized:
+            IStatusMessage(request).add(
+                _(u"Permission denied to paste content in here")
+            )
+            return request.response.redirect(context.absolute_url())
+
         uuid = IUUID(context, 0)
         task_id = utils.register_task(action=constants.PASTE, context=uuid)
 

@@ -1,16 +1,17 @@
 # collective.async
-Table of contents
-      How it was working
-What was changed
-A new viewlet
-Task in progress page
-Task details page
-Automatic refresh of folder_contents table
-Automatic full page refresh
-Actions currently patched
-Actions performed from the left toolbar
-Actions performed from the folder_contents toolbar
-Remains to be done
+## Table of contents
+* [How it was working](#how-it-was-working)
+* [What was changed](#what-was-changed)
+  * [A new viewlet](#a-new-viewlet)
+  * [Task in progress page](#task-in-progress-page)
+  * [Task details page](#task-details-page)
+  * [Automatic refresh of folder_contents table](#automatic-refresh-of-folder_contents-table)
+  * [Automatic full page refresh](#automatic-full-page-refresh)
+* [Actions currently patched](#actions-currently-patched)
+  * [Actions performed from the left toolbar](#actions-performed-from-the-left-toolbar)
+  * [Actions performed from the folder_contents toolbar](#actions-performed-from-the-folder_contents-toolbar)
+* [Events](#events)
+* [Remains to be done](#remains-to-be-done)
 
 ## How it was working
 Some long running tasks, such as deleting content, were patched to instead be performed asynchronously using celery.
@@ -77,11 +78,25 @@ It is worth noting that if the current page is either an **Add** form or an **Ed
 ### Actions performed from the folder_contents toolbar
 1. Delete an item
 2. Paste an item
+3. Rename an item
+
+## Events
+Events are fired prior to any of the async tasks being created. You can subscribe to each of them, in order to add custom logic. They are the following:
+
+* `collective.async.interfaces.IAsyncBeforeAdd`
+* `collective.async.interfaces.IAsyncBeforeEdit`
+* `collective.async.interfaces.IAsyncBeforePaste`
+* `collective.async.interfaces.IAsyncBeforeRename`
+* `collective.async.interfaces.IAsyncBeforeDelete`
+
+You can subscribe to them in the same way you would subscribe to any other event. As an example consider the following ZCML:
+
+```xml
+    <subscriber for="Products.CMFCore.interfaces.IContentish
+                     collective.async.interfaces.IAsyncBeforeAdd"
+                handler=".event_subscribers.do_something_before_add" />
+```
 
 ## Remains to be done
-1. Adjust some of the default status messages Plone shows (e.g. When creating an item Plone shows a “Item was created”, this should be adjusted to something like “An item will be created”, or something in that sense).
-2. Patch the “Rename item” from the folder_contents toolbar.
-3. Move the patched views from afsoc.plone to collective.async (@@fc-delete and @@fc-paste)
-4. Include entry points to each action that would allow to perform additional logic
-5. Decide if we need to patch other long lasting actions (Workflow change, Sharing tab permissions, etc).
-6. Add a timeout so if a task takes longer than X minutes, assume it failed
+1. Decide if there is need to patch other long lasting actions (Workflow change, Sharing tab permissions, etc).
+2. Add a timeout so if a task takes longer than X minutes, assume it failed
