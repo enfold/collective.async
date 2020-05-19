@@ -169,7 +169,7 @@ class CheckForTasks(BrowserView):
                     context = task.get("context", None)
                     if context:
                         context = content_api.get(UID=context)
-                    else:
+                    if not context:
                         context = self.context
                     if (
                         action == constants.ADD
