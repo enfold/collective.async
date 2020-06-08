@@ -85,12 +85,13 @@ class RenameForm(plone_actions.RenameForm):
         try:
             notify(events.AsyncBeforeRename(context, newid, newtitle))
         except Unauthorized:
-            raise Unauthorized(
+            IStatusMessage(self.request).add(
                 _(
                     u"Permission denied to rename ${title}.",
                     mapping={u"title": context.title},
                 )
             )
+            return self.request.response.redirect(context.absolute_url())
 
         uuid = IUUID(context, 0)
         task_id = utils.register_task(
@@ -176,11 +177,23 @@ class CheckForTasks(BrowserView):
                         and context.absolute_url() == url
                     ):
                         result = True
-                    elif action == constants.RENAME and (
-                        context.absolute_url() == url
-                        or context.aq_parent.absolute_url() == url
-                    ):
-                        result = True
+                    elif action == constants.RENAME:
+                        if (
+                            context.absolute_url() == url
+                            or context.aq_parent.absolute_url() == url
+                        ):
+                            # We are currently at the folder holding the
+                            # renamed object.
+                            result = True
+                        else:
+                            old_id = task.get("old_id", "")
+                            old_url = "%s/%s" % (
+                                context.aq_parent.absolute_url(), old_id
+                            )
+                            if url == old_url:
+                                # We are currently at the old object
+                                # that was renamed.
+                                result = True
                     elif (
                         action == constants.DELETE
                         and context.absolute_url() == url
