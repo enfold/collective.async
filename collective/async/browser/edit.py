@@ -27,7 +27,7 @@ class AsyncEditForm(edit.DefaultEditForm):
     def handleApply(self, action):
         data, errors = self.extractData()
         if errors:
-            self.status = self.formErrorMessage
+            self.status = self.formErrorsMessage
             return
 
         try:
