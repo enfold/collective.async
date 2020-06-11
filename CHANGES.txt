@@ -4,5 +4,9 @@ collective.async Changelog
 1.0 (unreleased)
 ----------------
 
+- #3351982: avoid using raise when the rename popup fails, and add logic so that
+  it will reload the page when the current context is the item being renamed.
+  [JL 2020-06-09]
+
 - #3372168: Fix typo in AsyncEditForm.handleApply
   [JL 2020-06-09]
