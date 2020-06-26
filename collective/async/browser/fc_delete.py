@@ -2,6 +2,7 @@
 import transaction
 from .. import constants
 from .. import events
+from .. import interfaces
 from .. import tasks
 from .. import utils
 from AccessControl import Unauthorized
@@ -54,6 +55,9 @@ class DeleteActionView(BaseDeleteActionView):
                         mapping={u"title": title},
                     )
                 )
+                return
+            except interfaces.AsyncValidationFailed, e:
+                self.errors.append(unicode(e))
                 return
 
             self.task_id = utils.register_task(

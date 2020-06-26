@@ -3,6 +3,7 @@ import transaction
 from AccessControl import Unauthorized
 from .. import constants
 from .. import events
+from .. import interfaces
 from .. import tasks
 from .. import utils
 from plone.app.content.browser.contents.paste import (
@@ -43,6 +44,9 @@ class PasteActionView(BasePasteActionView):
                     mapping={u"title": self.objectTitle(self.dest)},
                 )
             )
+            return self.message()
+        except interfaces.AsyncValidationFailed, e:
+            self.errors.append(unicode(e))
             return self.message()
 
         self.task_id = utils.register_task(action=constants.PASTE, context=uuid)

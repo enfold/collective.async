@@ -2,6 +2,7 @@
 import zope.component
 from .. import constants
 from .. import events
+from .. import interfaces
 from .. import tasks
 from .. import utils
 from AccessControl import Unauthorized
@@ -36,6 +37,9 @@ class AsyncEditForm(edit.DefaultEditForm):
             IStatusMessage(self.request).add(
                 _(u"You are not authorized to edit this element.")
             )
+            return
+        except interfaces.AsyncValidationFailed, e:
+            IStatusMessage(self.request).add(unicode(e))
             return
 
         content = self.getContent()

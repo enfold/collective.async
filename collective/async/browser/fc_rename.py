@@ -5,6 +5,7 @@ from AccessControl import Unauthorized
 from Acquisition import aq_inner
 from .. import constants
 from .. import events
+from .. import interfaces
 from .. import tasks
 from .. import utils
 from plone.app.content.browser.contents.rename import (
@@ -66,6 +67,10 @@ class RenameActionView(BaseRenameActionView):
                 self.errors.append(
                     _(u"Error renaming ${title}", mapping={"title": title})
                 )
+                continue
+            except interfaces.AsyncValidationFailed, e:
+                sp.rollback()
+                self.errors.append(unicode(e))
                 continue
 
             uuid = IUUID(obj, 0)

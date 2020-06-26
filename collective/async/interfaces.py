@@ -34,3 +34,7 @@ class IAsyncBeforeRename(IObjectEvent):
 class IAsyncBeforeDelete(IObjectEvent):
     """ Event that will be fired before adding an async delete task
     """
+
+
+class AsyncValidationFailed(Exception):
+    """ Validation failed before async task was sent """

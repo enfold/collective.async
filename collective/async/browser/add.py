@@ -3,6 +3,7 @@ import json
 import zope.component
 from .. import constants
 from .. import events
+from .. import interfaces
 from .. import tasks
 from .. import utils
 from AccessControl import Unauthorized
@@ -28,6 +29,9 @@ class AsyncAddForm(add.DefaultAddForm):
             IStatusMessage(self.request).add(
                 _(u"You are not authorized to add content here.")
             )
+            return
+        except interfaces.AsyncValidationFailed, e:
+            IStatusMessage(self.request).add(unicode(e))
             return
 
         uuid = IUUID(self.context, 0)

@@ -2,6 +2,7 @@
 import json
 from .. import constants
 from .. import events
+from .. import interfaces
 from .. import tasks
 from .. import utils
 from AccessControl import getSecurityManager
@@ -42,6 +43,9 @@ class DeleteConfirmationForm(plone_actions.DeleteConfirmationForm):
                     )
                 )
                 return request.response.redirect(context.absolute_url())
+            except interfaces.AsyncValidationFailed, e:
+                IStatusMessage(request).add(unicode(e))
+                return request.response.redirect(context.absolute_url())
 
             task_id = utils.register_task(
                 action=constants.DELETE, context=uuid, id=el_id
@@ -65,6 +69,7 @@ class DeleteConfirmationForm(plone_actions.DeleteConfirmationForm):
 class RenameForm(plone_actions.RenameForm):
     @button.buttonAndHandler(_(u"Rename"), name="Rename")
     def handle_rename(self, action):
+        request = self.request
         data, errors = self.extractData()
         if errors:
             return
@@ -92,6 +97,9 @@ class RenameForm(plone_actions.RenameForm):
                 )
             )
             return self.request.response.redirect(context.absolute_url())
+        except interfaces.AsyncValidationFailed, e:
+            IStatusMessage(request).add(unicode(e))
+            return request.response.redirect(context.absolute_url())
 
         uuid = IUUID(context, 0)
         task_id = utils.register_task(
@@ -126,6 +134,9 @@ class ObjectPasteView(plone_actions.ObjectPasteView):
             IStatusMessage(request).add(
                 _(u"Permission denied to paste content in here")
             )
+            return request.response.redirect(context.absolute_url())
+        except interfaces.AsyncValidationFailed, e:
+            IStatusMessage(request).add(unicode(e))
             return request.response.redirect(context.absolute_url())
 
         uuid = IUUID(context, 0)
