@@ -53,27 +53,27 @@ def add_object(task, container, task_id):
 
 def add_description_func(task):
     context = content_api.get(UID=task['context'])
-    obj = task.get("obj")
+    obj_data = task.get("obj_data")
     folder_url = ""
     if context:
         folder_url = context.absolute_url()
     msg = (
         "<span>Adding '<strong>{title}</strong>' to "
         "<a href='{url}'>{url}</a></span>"
-    ).format(title=obj.title, url=folder_url)
+    ).format(title=obj_data.get('title', ""), url=folder_url)
     return msg
 
 
 def add_error_func(task):
     context = content_api.get(UID=task['context'])
-    obj = task.get("obj")
+    obj_data = task.get("obj_data")
     folder_url = ""
     if context:
         folder_url = context.absolute_url()
     msg = (
         "<span>An error occurred when trying to add '"
         "<strong>{title}</strong>' to <a href='{url}'>{url}</a></span>"
-    ).format(title=obj.title, url=folder_url)
+    ).format(title=obj_data.get('title', ""), url=folder_url)
     return msg
 
 

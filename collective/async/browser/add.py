@@ -35,8 +35,11 @@ class AsyncAddForm(add.DefaultAddForm):
             return
 
         uuid = IUUID(self.context, 0)
+        obj_data = {
+            "title": data.get("IDublinCore.title", data.get("title", u"")),
+        }
         task_id = utils.register_task(
-            obj=obj, action=constants.ADD, context=uuid
+            obj=obj, obj_data=obj_data, action=constants.ADD, context=uuid
         )
         tasks.add_object.apply_async([self.context, task_id], {})
         utils.add_task_to_cookie(self.request, task_id)
