@@ -261,28 +261,29 @@ class CheckForTasks(BrowserView):
                         result["should_reload"] = self.should_reload(task)
                 elif task["status"] == constants.ERROR:
                     err_task = {"task_id": task.get("task_id", "")}
-                    err_msg = ""
-                    if action == constants.ADD:
-                        err_msg = (
-                            "An error occurred when trying to add an item."
-                        )
-                    elif action == constants.EDIT:
-                        err_msg = (
-                            "An error occurred when trying to save changes "
-                            "to an item."
-                        )
-                    elif action == constants.DELETE:
-                        err_msg = (
-                            "An error occurred when trying to delete an item."
-                        )
-                    elif action == constants.RENAME:
-                        err_msg = (
-                            "An error occurred when trying to rename an item."
-                        )
-                    elif action == constants.PASTE:
-                        err_msg = (
-                            "An error occurred when trying to paste an item."
-                        )
+                    err_msg = task.get("custom_err_msg", "")
+                    if not err_msg:
+                        if action == constants.ADD:
+                            err_msg = (
+                                "An error occurred when trying to add an item."
+                            )
+                        elif action == constants.EDIT:
+                            err_msg = (
+                                "An error occurred when trying to save changes "
+                                "to an item."
+                            )
+                        elif action == constants.DELETE:
+                            err_msg = (
+                                "An error occurred when trying to delete an item."
+                            )
+                        elif action == constants.RENAME:
+                            err_msg = (
+                                "An error occurred when trying to rename an item."
+                            )
+                        elif action == constants.PASTE:
+                            err_msg = (
+                                "An error occurred when trying to paste an item."
+                            )
 
                     err_task["error_message"] = err_msg
                     result["error"].append(err_task)
