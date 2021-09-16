@@ -54,7 +54,6 @@ class DeleteConfirmationForm(plone_actions.DeleteConfirmationForm):
                 [parent, context.getId(), title, task_id], dict()
             )
 
-            utils.add_task_to_cookie(request, task_id)
             return request.response.redirect(parent.absolute_url())
         else:
             IStatusMessage(request).add(
@@ -113,7 +112,6 @@ class RenameForm(plone_actions.RenameForm):
         tasks.rename.apply_async(
             [context, data["new_id"], data["new_title"], task_id], dict()
         )
-        utils.add_task_to_cookie(self.request, task_id)
         return self.request.response.redirect(parent.absolute_url())
 
 
@@ -144,8 +142,17 @@ class ObjectPasteView(plone_actions.ObjectPasteView):
 
         tasks.paste.apply_async([context, request["__cp"], task_id], dict())
 
-        utils.add_task_to_cookie(request, task_id)
         return request.response.redirect(context.absolute_url())
+
+
+class MarkTaskSeen(BrowserView):
+    def __call__(self, *args, **kwargs):
+        if user_api.is_anonymous():
+            raise Unauthorized
+        request = self.request
+        task_id = request.get("task_id")
+        if task_id:
+            utils.mark_task_seen(task_id)
 
 
 class CheckForTasks(BrowserView):
@@ -234,59 +241,64 @@ class CheckForTasks(BrowserView):
         if user_api.is_anonymous():
             raise Unauthorized
         request = self.request
-        task_ids = request.get("task_ids")
+        ip_task_ids = request.get("ip_task_ids", list())
+        if ip_task_ids:
+            try:
+                ip_task_ids = json.loads(ip_task_ids)
+            except Exception:
+                ip_task_ids = list()
+
+        all_task_ids = utils.get_taskids_for_user()
         result = {
             "processing": list(),
             "error": list(),
             "success": list(),
             "should_reload": False,
         }
-        if task_ids:
-            try:
-                task_ids = json.loads(task_ids)
-            except Exception:
-                task_ids = list()
 
-        for task_id in task_ids:
+        for task_id in all_task_ids:
             if utils.has_task(task_id):
                 task = dict(utils.get_task(task_id))
+                task['timestamp'] = task['timestamp'].isoformat()
                 action = task.get("action", None)
                 if action == constants.ADD and "obj" in task:
                     del task["obj"]
                 if task["status"] == constants.PROCESSING:
                     result["processing"].append(task)
-                elif task["status"] == constants.SUCCESS:
+                elif task["status"] == constants.SUCCESS and task_id in ip_task_ids:
                     result["success"].append(task)
                     if not result["should_reload"]:
                         result["should_reload"] = self.should_reload(task)
                 elif task["status"] == constants.ERROR:
-                    err_task = {"task_id": task.get("task_id", "")}
-                    err_msg = task.get("custom_err_msg", "")
-                    if not err_msg:
-                        if action == constants.ADD:
-                            err_msg = (
-                                "An error occurred when trying to add an item."
-                            )
-                        elif action == constants.EDIT:
-                            err_msg = (
-                                "An error occurred when trying to save changes "
-                                "to an item."
-                            )
-                        elif action == constants.DELETE:
-                            err_msg = (
-                                "An error occurred when trying to delete an item."
-                            )
-                        elif action == constants.RENAME:
-                            err_msg = (
-                                "An error occurred when trying to rename an item."
-                            )
-                        elif action == constants.PASTE:
-                            err_msg = (
-                                "An error occurred when trying to paste an item."
-                            )
+                    seen = task.get("seen", False)
+                    if not seen:
+                        err_task = {"task_id": task.get("task_id", "")}
+                        err_msg = task.get("custom_err_msg", "")
+                        if not err_msg:
+                            if action == constants.ADD:
+                                err_msg = (
+                                    "An error occurred when trying to add an item."
+                                )
+                            elif action == constants.EDIT:
+                                err_msg = (
+                                    "An error occurred when trying to save changes "
+                                    "to an item."
+                                )
+                            elif action == constants.DELETE:
+                                err_msg = (
+                                    "An error occurred when trying to delete an item."
+                                )
+                            elif action == constants.RENAME:
+                                err_msg = (
+                                    "An error occurred when trying to rename an item."
+                                )
+                            elif action == constants.PASTE:
+                                err_msg = (
+                                    "An error occurred when trying to paste an item."
+                                )
 
-                    err_task["error_message"] = err_msg
-                    result["error"].append(err_task)
+                        err_task["error_message"] = err_msg
+                        result["error"].append(err_task)
 
         request.response.setHeader(
             "Content-Type", "application/json; charset=utf-8"

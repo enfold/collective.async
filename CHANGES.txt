@@ -16,3 +16,6 @@ collective.async Changelog
 
 - #3149324: Allow event handlers to do validation before the task starts.
   [JL 2020-06-26]
+
+- #3960036: Remove the use of a cookie to keep track of async tasks.
+  [JL 2021-09-16]

@@ -13,91 +13,76 @@ require([
   'jquery',
   'underscore',
   'mockup-patterns-structure-url/js/views/generic-popover',
-  'jquery.cookie'
 ], function($, _, GenericPopover) {
     'use strict';
 
-    var inprogress_cookie_name = "async.tasks.inprogress",
-        errored_cookie_name = "async.tasks.errors",
-        poll_url = PORTAL_URL + '/@@check-for-tasks',
+    var poll_url = PORTAL_URL + '/@@check-for-tasks',
         task_detail_url = PORTAL_URL + '/@@task-details',
+        mark_task_seen = PORTAL_URL + '/@@task-seen',
         timeout = 5000,
         initialized = false;
 
-    function getTasksFromCookie(c_name) {
-      var tasks = $.cookie(c_name);
-      if (tasks !== undefined) {
-        tasks = JSON.parse(tasks);
-      } else {
-        tasks = [];
+    function getIPTasks() {
+      var tasks = [];
+      var selector = 'div#collective-async-polling div#async-inprogress-tasks span';
+      var spans = $(selector).toArray();
+      _.each(spans, function (span){
+          tasks.push(span.textContent);
+      });
+
+      var ip_tasks = $("div#collective-async-polling").data('ip_tasks');
+      if (ip_tasks === undefined){
+          ip_tasks = [];
       }
-      return tasks;
-    }
-
-    function storeTasksInCookie(c_name, tasks) {
-      $.cookie(c_name, JSON.stringify(tasks), { path: '/' });
-      return;
-    }
-
-    function getIPTasksFromCookie() {
-      var tasks = getTasksFromCookie(inprogress_cookie_name);
-      return tasks;
-    }
-
-    function storeIPTasksInCookie(tasks) {
-      storeTasksInCookie(inprogress_cookie_name, tasks);
-      return;
-    }
-
-    function getErrorTasksFromCookie() {
-      var tasks = getTasksFromCookie(errored_cookie_name);
-      return tasks;
-    }
-
-    function storeErrorTasksInCookie(tasks) {
-      storeTasksInCookie(errored_cookie_name, tasks);
-      return;
-    }
-
-    function removeErrorTaskFromCookie(task_id) {
-      var tasks = getErrorTasksFromCookie(),
-          new_err_tasks = [];
-
-      _.each(tasks, function(val) {
-        if (val['task_id'] !== task_id){
-          new_err_tasks.push(val);
-        }
+      _.each(ip_tasks, function (task){
+          tasks.push(task);
       });
 
-      storeErrorTasksInCookie(new_err_tasks);
+      return tasks;
     }
 
-    function addErrorTaskInCookie(task) {
-      var tasks = getErrorTasksFromCookie(),
-          new_err_tasks = [];
-
-      _.each(tasks, function(val) {
-        if (val['task_id'] !== task['task_id']){
-          new_err_tasks.push(val);
-        }
+    function removeIPTask(task_id) {
+      var tasks = [];
+      var selector = 'div#collective-async-polling div#async-inprogress-tasks span';
+      var spans = $(selector).toArray();
+      _.each(spans, function (span){
+          if (span.textContent === task_id){
+              $(span).remove();
+          }
       });
 
-      new_err_tasks.push(task);
-      storeErrorTasksInCookie(new_err_tasks);
+      var ip_tasks = $("div#collective-async-polling").data('ip_tasks');
+      if (ip_tasks === undefined){
+          ip_tasks = [];
+      }
+      const index = ip_tasks.indexOf(task_id);
+      if (index > -1) {
+        ip_tasks.splice(index, 1);
+      }
+
+      $("div#collective-async-polling").data('ip_tasks', ip_tasks);
     }
 
-    function renderAsyncMessage() {
-      var tasks = getIPTasksFromCookie(),
-          err_tasks = getErrorTasksFromCookie(),
-          msg;
-      if (tasks.length > 0){
+    function getErrorTasks() {
+      var tasks = [];
+      var selector = 'div#collective-async-polling div#async-error-tasks span';
+      var spans = $(selector).toArray();
+      _.each(spans, function (span){
+          tasks.push(span.textContent);
+      });
+      return tasks;
+    }
+
+    function renderAsyncMessage(ip_tasks, err_tasks) {
+      var msg;
+      if (ip_tasks.length > 0){
         var msg_div = $("div#collective-async-polling div.alert-success div.message");
         msg_div.html("");
         var msg = $("<span></span>");
-        if (tasks.length > 1){
-          msg.html("There are "+ tasks.length +" background jobs running. ");
+        if (ip_tasks.length > 1){
+          msg.html("There are "+ ip_tasks.length +" background jobs running. ");
         } else {
-          msg.html("There is "+ tasks.length +" background job running. ");
+          msg.html("There is "+ ip_tasks.length +" background job running. ");
         }
         msg.append($("<a></a>")
                    .attr('href', task_detail_url)
@@ -114,6 +99,16 @@ require([
           // There's already an alert about this errored task, so ignore...
           return;
         }
+        var seen = false;
+        _.each(getTasksSeen(), function(task_id) {
+            if (task_id == val['task_id']){
+                seen = true;
+            }
+        })
+        if (seen){
+            return;
+        }
+
         var err_alert = $("<div></div>")
                         .attr('id', val['task_id'])
                         .addClass("alert alert-danger portalMessage");
@@ -128,7 +123,7 @@ require([
                               .addClass('close')
                               .html("X")
                               .on('click', function(){
-                                removeErrorTaskFromCookie(val['task_id']);
+                                markTaskSeen(val['task_id']);
                                 err_alert.remove();
                               }));
         err_alert.append(err_msg);
@@ -137,88 +132,114 @@ require([
 
     }
 
-    function check_for_running_tasks() {
-      console.log("Check running tasks");
-      var tasks = getIPTasksFromCookie();
-      console.log(tasks.length + " running tasks");
-      if (tasks.length > 0){
-        $.ajax({
-            type: 'POST',
-            url: poll_url,
-            data: {
-                task_ids: JSON.stringify(tasks),
-                current_location: JSON.stringify(window.location),
-            },
-            dataType: 'json',
-            error: function(request, status, error) {
-                setTimeout(check_for_running_tasks, timeout);
-            },
-            success: function(data, status, request) {
-                var patternStructure = $("div.pat-structure").data('patternStructure'),
-                    ip_tasks = [];
-
-                // First, store tasks that are "in process" in cookie
-                _.each(data['processing'], function(val) {
-                  if (val['task_id'] !== undefined){
-                    ip_tasks.push(val['task_id']);
-                  }
-                });
-                storeIPTasksInCookie(ip_tasks);
-
-                if(data['processing'].length == 0){
-                  if (patternStructure !== undefined){
-                    // If there are no tasks in progress, then clear the
-                    // status from the folder_contents view (if any)
-                    patternStructure.view.setStatus();
-                  }
-                }
-                if(data['success'].length > 0){
-                  if (patternStructure !== undefined){
-                    // If there are tasks that succeded, then refresh the
-                    // folder_contents table (If currently at the
-                    // folder_contents)
-                    patternStructure.view.collection.pager();
-                  }
-                }
-                _.each(data['error'], function(val) {
-                  if (val['task_id'] !== undefined){
-                    // Add tasks that errored to a separate cookie
-                    addErrorTaskInCookie(val);
-                  }
-                });
-
-                setTimeout(check_for_running_tasks, timeout);
-                renderAsyncMessage();
-
-                if (data['should_reload'] !== undefined &&
-                    data['should_reload'] == true){
-                  window.location.reload();
-                }
-            },
-        });
-      }
+    function addTaskIP(task_id) {
+        var ip_tasks = $("div#collective-async-polling").data('ip_tasks');
+        if (ip_tasks === undefined){
+            ip_tasks = [];
+        }
+        ip_tasks.push(task_id);
+        $("div#collective-async-polling").data('ip_tasks', ip_tasks);
     }
 
+    function addTaskSeen(task_id) {
+        var seen_tasks = $("div#collective-async-polling").data('seen_tasks');
+        if (seen_tasks === undefined){
+            seen_tasks = [];
+        }
+        seen_tasks.push(task_id);
+        $("div#collective-async-polling").data('seen_tasks', seen_tasks);
+    }
+
+    function getTasksSeen() {
+        var seen_tasks = $("div#collective-async-polling").data('seen_tasks');
+        if (seen_tasks === undefined){
+            seen_tasks = [];
+        }
+        return seen_tasks;
+    }
+
+    function markTaskSeen(task_id) {
+      $.ajax({
+          type: 'POST',
+          url: mark_task_seen,
+          data: {
+              task_id: task_id
+          },
+          dataType: 'json',
+          success: function(data, status, request) {
+              addTaskSeen(task_id);
+          },
+      });
+
+    }
+
+    function check_for_running_tasks() {
+      console.log("Check running tasks");
+      var ip_tasks = getIPTasks();
+      $.ajax({
+          type: 'POST',
+          url: poll_url,
+          data: {
+              ip_task_ids: JSON.stringify(ip_tasks),
+              current_location: JSON.stringify(window.location)
+          },
+          dataType: 'json',
+          error: function(request, status, error) {
+              setTimeout(check_for_running_tasks, timeout);
+          },
+          success: function(data, status, request) {
+              var patternStructure = $("div.pat-structure").data('patternStructure'),
+                  ip_tasks = [],
+                  err_tasks = [];
+
+              _.each(data['processing'], function(val) {
+                  if (val['task_id'] !== undefined){
+                  ip_tasks.push(val);
+                  }
+              });
+
+              _.each(data['error'], function(val) {
+                  if (val['task_id'] !== undefined){
+                  err_tasks.push(val);
+                  }
+              });
+
+              if(data['processing'].length == 0){
+                  if (patternStructure !== undefined){
+                  // If there are no tasks in progress, then clear the
+                  // status from the folder_contents view (if any)
+                  patternStructure.view.clearStatus();
+                  }
+              }
+              if(data['success'].length > 0){
+                  if (patternStructure !== undefined){
+                  // If there are tasks that succeded, then refresh the
+                  // folder_contents table (If currently at the
+                  // folder_contents)
+
+                  _.each(data['success'], function(val) {
+                    if (val['task_id'] !== undefined){
+                      removeIPTask(val['task_id']);
+                    }
+                  });
+                  patternStructure.view.collection.pager();
+                  }
+              }
+
+              setTimeout(check_for_running_tasks, timeout);
+              renderAsyncMessage(ip_tasks, err_tasks);
+
+              if (data['should_reload'] !== undefined &&
+                  data['should_reload'] == true){
+                window.location.reload();
+              }
+          },
+      });
+
+    }
     function afterClickButton(data){
-      // Add task to the list in cookie
-      var task_id = data['task_id'],
-          task_ids = data['task_ids'],
-          tasks;
-
-      if (task_id !== undefined) {
-        tasks = getIPTasksFromCookie();
-        tasks.push(task_id);
-        storeIPTasksInCookie(tasks);
-      }
-
-      if (task_ids !== undefined){
-        _.each(task_ids, function(task_id) {
-          tasks = getIPTasksFromCookie();
-          tasks.push(task_id);
-          storeIPTasksInCookie(tasks);
-        });
-      }
-      check_for_running_tasks();
+      var task_id = data['task_id'];
+      addTaskIP(task_id);
     }
 
     function buttonClickEvent() {
@@ -244,9 +265,8 @@ require([
 
     $(document).ready(function() {
       check_for_running_tasks();
-      renderAsyncMessage();
-
-      $('body').on('context-info-loaded', function(){
+    });
+    $(window).load(function() {
         if (!initialized) {
           // If we have the structure pattern here, we will remove the event bound
           // to some buttons and re-bind them to include a callback
@@ -285,7 +305,6 @@ require([
           }
         }
         initialized = true;
-      })
     });
 
 //$("div.pat-structure").data('patternStructure').view.collection.pager()

@@ -52,7 +52,6 @@ class AsyncEditForm(edit.DefaultEditForm):
             action=constants.EDIT, changes=new_changes, context=uuid
         )
         tasks.finish_edit.apply_async([content, task_id], dict())
-        utils.add_task_to_cookie(self.request, task_id)
         IStatusMessage(self.request).addStatusMessage(
             self.success_message, "info"
         )

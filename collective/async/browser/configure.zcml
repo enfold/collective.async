@@ -25,6 +25,13 @@
     />
 
   <browser:page
+    name="task-seen"
+    for="*"
+    class=".actions.MarkTaskSeen"
+    permission="zope2.View"
+    />
+
+  <browser:page
     name="task-details"
     for="Products.CMFPlone.interfaces.siteroot.IPloneSiteRoot"
     class=".task_details.TaskDetails"

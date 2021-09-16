@@ -6,6 +6,7 @@
         name="collective.async.polling"
         manager="plone.app.layout.viewlets.interfaces.IGlobalStatusMessage"
         template="async_polling.pt"
+        class=".async_polling.AsyncViewlet"
         permission="zope2.View"
         />
 

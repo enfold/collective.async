@@ -1,11 +1,17 @@
 # -*- coding: utf-8 -*-
 import json
+import logging
 import uuid
 from . import constants
+from datetime import datetime
 from BTrees.OOBTree import OOBTree
+from persistent.list import PersistentList
 from persistent.mapping import PersistentMapping
 from plone.api import portal as portal_api
+from plone.api import user as user_api
 from zope.annotation.interfaces import IAnnotations
+
+logger = logging.getLogger(__name__)
 
 
 def add_task_storage():
@@ -25,12 +31,51 @@ def get_task_storage():
 
 def register_task(**kwargs):
     task_id = uuid.uuid4().hex
+    now = datetime.now()
+    user_id = user_api.get_current().getId()
     record = PersistentMapping(kwargs)
     record["status"] = constants.PROCESSING
     record["task_id"] = task_id
+    record['timestamp'] = now
+    record['seen'] = False
+    record['user'] = user_id
     storage = get_task_storage()
+    if 'users' not in storage:
+        storage['users'] = OOBTree()
+    if user_id not in storage['users']:
+        storage['users'][user_id] = PersistentList()
+    storage['users'][user_id].append(task_id)
     storage[task_id] = record
     return task_id
+
+
+def get_taskids_for_user():
+    user_id = user_api.get_current().getId()
+    storage = get_task_storage()
+    tasks = list()
+    if user_id in storage.get('users', dict()):
+        for taskid in storage['users'][user_id]:
+            tasks.append(taskid)
+    return tasks
+
+
+def get_tasks_for_user():
+    tasks = list()
+    task_ids = get_taskids_for_user()
+    for task_id in task_ids:
+        task = get_task(task_id)
+        tasks.append(task)
+    return tasks
+
+
+def get_ip_tasks_for_user():
+    tasks = list()
+    task_ids = get_taskids_for_user()
+    for task_id in task_ids:
+        task = get_task(task_id)
+        if task["status"] == constants.PROCESSING:
+            tasks.append(task)
+    return tasks
 
 
 def update_task(task_id, **kwargs):
@@ -39,9 +84,21 @@ def update_task(task_id, **kwargs):
     record.update(kwargs)
 
 
+def mark_task_seen(task_id):
+    update_task(task_id, seen=True)
+
+
 def remove_task(task_id):
     storage = get_task_storage()
-    del storage[task_id]
+    record = storage.get(task_id, None)
+    if record is not None:
+        if 'user' in record:
+            user_id = record['user']
+            storage['users'][user_id].remove(task_id)
+        del storage[task_id]
+        logger.info('Removed task %s' % task_id)
+    else:
+        logger.info('There is no task with id %s' % task_id)
 
 
 def has_task(task_id):
@@ -52,25 +109,6 @@ def has_task(task_id):
 def get_task(task_id):
     storage = get_task_storage()
     return storage.get(task_id)
-
-
-def get_tasks_from_cookie(request):
-    c_str = request.cookies.get(constants.IN_PROGRESS_COOKIE_NAME, "[]")
-    try:
-        ip_tasks = json.loads(c_str)
-    except:
-        ip_tasks = list()
-    return ip_tasks
-
-
-def add_task_to_cookie(request, task_id):
-    ip_tasks = get_tasks_from_cookie(request)
-    if task_id not in ip_tasks:
-        ip_tasks.append(task_id)
-    c_str = json.dumps(ip_tasks)
-    request.response.setCookie(
-        constants.IN_PROGRESS_COOKIE_NAME, c_str, path="/"
-    )
 
 
 _ACTIONS = dict()

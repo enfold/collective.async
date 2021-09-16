@@ -2,6 +2,12 @@
 <script type="text/javascript" src="" tal:attributes="src string:${context/portal_url}/++resource++collective.async/poll_viewlet.js" ></script>
 
 <div id="collective-async-polling">
+  <div id="async-inprogress-tasks" style="display:none">
+    <span tal:repeat="task view/get_ip_tasks" tal:content="task"/>
+  </div>
+  <div id="async-error-tasks" style="display:none">
+    <span tal:repeat="task view/get_error_tasks" tal:content="task"/>
+  </div>
 
   <div class="alert alert-success portalMessage" role="alert" style="display:none">
     <div class="async-spinner"><div></div></div>

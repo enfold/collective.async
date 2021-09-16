@@ -20,8 +20,8 @@ class TaskDetails(BrowserView):
             self.in_progress_tasks = True
         return self.index()
 
-    def get_tasks_from_cookie(self):
-        tasks = utils.get_tasks_from_cookie(self.request)
+    def get_ip_tasks(self):
+        tasks = utils.get_ip_tasks_for_user()
         return tasks
 
     def get_task(self, task_id=None):

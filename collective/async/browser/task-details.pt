@@ -17,7 +17,7 @@
       <div class="documentDescription description">
       </div>
 
-      <tal:ip_tasks condition="view/in_progress_tasks" define="tasks view/get_tasks_from_cookie">
+      <tal:ip_tasks condition="view/in_progress_tasks" define="tasks view/get_ip_tasks">
         <p tal:condition="not:tasks">There are no tasks in progress</p>
         <table tal:condition="tasks" class="listing">
           <thead><!--
@@ -32,12 +32,10 @@
             </th>
           </thead>
           <tdata>
-            <tr tal:repeat="task_id tasks">
-              <tal:block define="task python:view.get_task(task_id)">
-                <!--<td tal:content="task/action|nothing"></td>-->
-                <td tal:content="structure python:view.get_task_description(task)" />
-                <td><a tal:attributes="href string:${context/absolute_url}/@@task-details?task_id=${task_id}">Details</a></td>
-              </tal:block>
+            <tr tal:repeat="task tasks">
+              <!--<td tal:content="task/action|nothing"></td>-->
+              <td tal:content="structure python:view.get_task_description(task)" />
+              <td><a tal:attributes="href string:${context/absolute_url}/@@task-details?task_id=${task/task_id}">Details</a></td>
             </tr>
           </tdata>
         </table>
