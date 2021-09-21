@@ -26,3 +26,6 @@ class AsyncViewlet(ViewletBase):
             if task.get('status') == constants.ERROR:
                 tasks.append(task.get('task_id'))
         return tasks
+
+    def available(self):
+        return not self.portal_state.anonymous()

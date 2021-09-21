@@ -19,3 +19,6 @@ collective.async Changelog
 
 - #3960036: Remove the use of a cookie to keep track of async tasks.
   [JL 2021-09-16]
+
+- #3960036: Don't poll if not logged in.
+  [JL 2021-09-21]
