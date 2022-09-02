@@ -101,6 +101,21 @@ def remove_task(task_id):
         logger.info('There is no task with id %s' % task_id)
 
 
+def cleanup_tasks(cutoff):
+    now = datetime.now()
+    storage = get_task_storage()
+    for task_id in list(storage.keys()):
+        if task_id == 'users':
+            continue
+        task = storage[task_id]
+        if 'timestamp' in task:
+            delta = now - task['timestamp']
+            if delta >= cutoff:
+                remove_task(task_id)
+        else:
+            remove_task(task_id)
+
+
 def has_task(task_id):
     storage = get_task_storage()
     return task_id in storage

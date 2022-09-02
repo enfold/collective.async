@@ -37,5 +37,8 @@ setup(name='collective.async',
 
       [celery_tasks]
       collective_async = collective.async.tasks
+
+      [console_scripts]
+      cleanup_task_results = collective.async.cleanup:main
       """,
       )

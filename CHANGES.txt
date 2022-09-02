@@ -22,3 +22,6 @@ collective.async Changelog
 
 - #3960036: Don't poll if not logged in.
   [JL 2021-09-21]
+
+- Add script to clean up old tasks.
+  [JL 2022-09-02]
