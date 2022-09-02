@@ -51,7 +51,8 @@ class AsyncEditForm(edit.DefaultEditForm):
         task_id = utils.register_task(
             action=constants.EDIT, changes=new_changes, context=uuid
         )
-        tasks.finish_edit.apply_async([content, task_id], dict())
+        task_result = tasks.finish_edit.apply_async([content, task_id], dict())
+        utils.update_task(task_id, celery_task_id=task_result.id)
         IStatusMessage(self.request).addStatusMessage(
             self.success_message, "info"
         )

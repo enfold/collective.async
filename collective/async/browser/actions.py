@@ -50,9 +50,10 @@ class DeleteConfirmationForm(plone_actions.DeleteConfirmationForm):
             task_id = utils.register_task(
                 action=constants.DELETE, context=uuid, id=el_id
             )
-            tasks.delete.apply_async(
+            task_result = tasks.delete.apply_async(
                 [parent, context.getId(), title, task_id], dict()
             )
+            utils.update_task(task_id, celery_task_id=task_result.id)
 
             return request.response.redirect(parent.absolute_url())
         else:
@@ -109,9 +110,10 @@ class RenameForm(plone_actions.RenameForm):
             new_id=newid,
             new_title=newtitle,
         )
-        tasks.rename.apply_async(
+        task_result = tasks.rename.apply_async(
             [context, data["new_id"], data["new_title"], task_id], dict()
         )
+        utils.update_task(task_id, celery_task_id=task_result.id)
         return self.request.response.redirect(parent.absolute_url())
 
 
@@ -140,7 +142,8 @@ class ObjectPasteView(plone_actions.ObjectPasteView):
         uuid = IUUID(context, 0)
         task_id = utils.register_task(action=constants.PASTE, context=uuid)
 
-        tasks.paste.apply_async([context, request["__cp"], task_id], dict())
+        task_result = tasks.paste.apply_async([context, request["__cp"], task_id], dict())
+        utils.update_task(task_id, celery_task_id=task_result.id)
 
         return request.response.redirect(context.absolute_url())
 

@@ -41,7 +41,8 @@ class AsyncAddForm(add.DefaultAddForm):
         task_id = utils.register_task(
             obj=obj, obj_data=obj_data, action=constants.ADD, context=uuid
         )
-        tasks.add_object.apply_async([self.context, task_id], {})
+        task_result = tasks.add_object.apply_async([self.context, task_id], {})
+        utils.update_task(task_id, celery_task_id=task_result.id)
         self.immediate_view = self.context.absolute_url()
         return obj
 

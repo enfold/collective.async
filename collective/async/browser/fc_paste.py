@@ -49,11 +49,13 @@ class PasteActionView(BasePasteActionView):
             self.errors.append(unicode(e))
             return self.message()
 
-        self.task_id = utils.register_task(action=constants.PASTE, context=uuid)
+        self.task_id = task_id = utils.register_task(action=constants.PASTE,
+                                                     context=uuid)
 
-        tasks.paste.apply_async(
+        task_result = tasks.paste.apply_async(
             [self.dest, self.request["__cp"], self.task_id], dict()
         )
+        utils.update_task(task_id, celery_task_id=task_result.id)
         return self.message()
 
     def message(self, missing=[]):

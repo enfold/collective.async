@@ -43,6 +43,9 @@
 
       <tal:detail_task condition="not:view/in_progress_tasks" define="task view/get_task">
         <p>Task ID: <span tal:content="request/task_id|nothing" /></p>
+        <tal:celery-task-id define="celery_task_id task/celery_task_id|nothing">
+        <p tal:condition="celery_task_id">Celery Task ID: <span tal:content="celery_task_id" /></p>
+        </tal:celery-task-id>
         <tal:error_task condition="python:task.get('status') == 'error'">
           <h2>An error has occurred</h2>
           <p tal:content="structure python:view.get_task_error(task)" />

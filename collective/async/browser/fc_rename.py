@@ -82,9 +82,10 @@ class RenameActionView(BaseRenameActionView):
                 new_id=newid,
                 new_title=newtitle,
             )
-            tasks.rename.apply_async(
+            task_result = tasks.rename.apply_async(
                 [obj, newid, newtitle, task_id], dict()
             )
+            utils.update_task(task_id, celery_task_id=task_result.id)
             self.task_ids.append(task_id)
 
         return self.message(missing)

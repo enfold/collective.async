@@ -25,3 +25,6 @@ collective.async Changelog
 
 - Add script to clean up old tasks.
   [JL 2022-09-02]
+
+- Add celery task id to task records.
+  [JL 2022-09-02]

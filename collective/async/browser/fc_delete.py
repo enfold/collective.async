@@ -60,12 +60,13 @@ class DeleteActionView(BaseDeleteActionView):
                 self.errors.append(unicode(e))
                 return
 
-            self.task_id = utils.register_task(
+            self.task_id = task_id = utils.register_task(
                 action=constants.DELETE, context=uuid, id=el_id
             )
-            tasks.delete.apply_async(
-                [parent, obj.getId(), title, self.task_id], dict()
+            task_result = tasks.delete.apply_async(
+                [parent, obj.getId(), title, task_id], dict()
             )
+            utils.update_task(task_id, celery_task_id=task_result.id)
 
     def message(self, missing=[]):
         if len(missing) > 0:
